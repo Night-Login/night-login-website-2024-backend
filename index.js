@@ -17,7 +17,12 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 
 // CORS
-app.use(cors());
+const corsOptions = {
+  origin: "*",
+  exposedHeaders: ['Auth'],
+  credentials: true,
+};
+app.use(cors(corsOptions));
 
 // MONGODB CONNECTION
 if (!process.env.MONGO_URI) {

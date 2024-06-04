@@ -11,15 +11,13 @@ const jwt = require("jsonwebtoken");
   RESPONSE    : -
 */
 exports.registerUser = async (req, res) => {
-  const { email, name, phoneNumber, gender } = req.body;
+  const { email, name } = req.body;
   const password = req.password;
   const salt = req.salt;
 
   const newUser = new User({
     email,
     name,
-    phoneNumber,
-    gender,
     password,
     salt
   });
@@ -34,7 +32,7 @@ exports.registerUser = async (req, res) => {
     .catch((err) => {
       if (err.errorResponse && err.errorResponse.code === 11000) {
         return res.status(400).json({
-          message: "Error! Email or phone number already exists!"
+          message: "Error! Email already exists!"
         });
       } else if (err.message && err._message == "User validation failed") {
         return res.status(409).json({
@@ -80,8 +78,9 @@ exports.loginUser = async (req, res) => {
         });
       } else {
         const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
-        res.status(200).cookie("AuthToken", token).json({
-          message: "Login successful"
+        res.status(200).header("Auth", token).json({
+          message: "Login successful",
+          token: token
         });
       }
     })
