@@ -123,15 +123,23 @@ exports.checkPayment = async (req, res) => {
       .status(orderId)
       .then((response) => {
         transaction.transactionStatus = response.transaction_status;
-        transaction.transactionTime = response.settlement_time;
         transaction.save().then(() => {
           if (
             response.transaction_status === "settlement" ||
             response.transaction_status === "capture"
           ) {
-            return res.status(200).json({
-              message: "Payment success!",
-              response: response
+            transaction.transactionTime = response.settlement_time;
+            transaction.save().then(() => {
+              return res.status(200).json({
+                message: "Payment success!",
+                response: response
+              });
+            })
+            .catch((err) => {
+              return res.status(500).json({
+                message: "Failed to save transaction",
+                err: err.message
+              });
             });
           } else {
             return res.status(402).json({
