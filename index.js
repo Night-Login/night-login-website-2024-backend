@@ -17,7 +17,12 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 
 // CORS
-app.use(cors());
+app.use(cors({
+  origin: '*', // Replace '*' with the specific domain if you need to restrict the origin
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+}));
 
 // MONGODB CONNECTION
 if (!process.env.MONGO_URI) {
