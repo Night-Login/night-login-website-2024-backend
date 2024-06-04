@@ -6,9 +6,9 @@ const transactionSchema = new mongoose.Schema({
     ref: "User",
     required: true
   },
-  orderId: {
+  projectId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Order",
+    ref: "Project",
     required: true
   },
   grossAmount: {

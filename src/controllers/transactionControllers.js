@@ -1,46 +1,55 @@
 const Transaction = require("../models/transactionModels");
-const Order = require("../models/orderModels");
+const Project = require("../models/projectModel");
 const { midtransCoreApi } = require("../config/midtrans");
 
 /*
   DESC        : Create transaction with empty payment
-  PARAMS      : orderId
+  PARAMS      : projectName, projectDescription, projectObjective, projectBudget
   METHOD      : POST
   VISIBILITY  : Private
   PRE-REQ     : -
   RESPONSE    : -
 */
 exports.createTransaction = async (req, res) => {
-  const { orderId } = req.body;
+  const { projectName, projectDescription, projectObjective, projectBudget } = req.body;
 
-  Order.findById(orderId).then((order) => {
-    if (!order) {
-      return res.status(404).json({
-        message: "Tour not found"
-      });
-    }
-
-    const newTransaction = new Transaction({
-      userId: req._id,
-      orderId: orderId,
-      grossAmount: order.orderPrice
-    });
-
-    newTransaction
-      .save()
-      .then((transaction) => {
-        res.status(201).json({
-          message: "Transaction created successfully",
-          orderId: transaction._id
-        });
-      })
-      .catch((err) => {
-        return res.status(500).json({
-          message: "Failed to create transaction",
-          err: err
-        });
-      });
+  const newProject = new Project({
+    projectName,
+    projectDescription,
+    projectObjective,
+    projectBudget
   });
+
+  newProject
+    .save()
+    .then((savedProject) => { 
+      const newTransaction = new Transaction({
+        userId: req._id,
+        projectId: savedProject._id,
+        grossAmount: projectBudget
+      });
+
+      newTransaction
+        .save()
+        .then((transaction) => {
+          res.status(201).json({
+            message: "Transaction created successfully",
+            orderId: transaction._id
+          });
+        })
+        .catch((err) => {
+          return res.status(500).json({
+            message: "Failed to create transaction",
+            err: err
+          });
+        });
+    })
+    .catch((err) => {
+      return res.status(500).json({
+        message: "Failed to create project",
+        err: err
+      });
+    });
 };
 
 /*
@@ -78,7 +87,8 @@ exports.createPayment = async (req, res) => {
         transaction.save().then(() => {
           return res.status(200).json({
             message: "Payment created successfully",
-            response: response
+            response: response,
+            qrLink: response.actions[0].url
           });
         });
       })
@@ -100,42 +110,42 @@ exports.createPayment = async (req, res) => {
   RESPONSE    : Payment status
 */
 exports.checkPayment = async (req, res) => {
-    const { orderId } = req.query;
-  
-    Transaction.findOne({ _id: orderId }).then((transaction) => {
-      if (!transaction) {
-        return res.status(404).json({
-          message: "Transaction not found"
+  const { orderId } = req.query;
+
+  Transaction.findOne({ _id: orderId }).then((transaction) => {
+    if (!transaction) {
+      return res.status(404).json({
+        message: "Transaction not found"
+      });
+    }
+
+    midtransCoreApi.transaction
+      .status(orderId)
+      .then((response) => {
+        transaction.transactionStatus = response.transaction_status;
+        transaction.transactionTime = response.settlement_time;
+        transaction.save().then(() => {
+          if (
+            response.transaction_status === "settlement" ||
+            response.transaction_status === "capture"
+          ) {
+            return res.status(200).json({
+              message: "Payment success!",
+              response: response
+            });
+          } else {
+            return res.status(402).json({
+              message: "Payment pending! Please complete payment!",
+              response: response
+            });
+          }
         });
-      }
-  
-      midtransCoreApi.transaction
-        .status(orderId)
-        .then((response) => {
-          transaction.transactionStatus = response.transaction_status;
-          transaction.transactionTime = response.settlement_time;
-          transaction.save().then(() => {
-            if (
-              response.transaction_status === "settlement" ||
-              response.transaction_status === "capture"
-            ) {
-              return res.status(200).json({
-                message: "Payment success!",
-                response: response
-              });
-            } else {
-              return res.status(402).json({
-                message: "Payment pending! Please complete payment!",
-                response: response
-              });
-            }
-          });
-        })
-        .catch((err) => {
-          return res.status(500).json({
-            message: "Failed to check payment",
-            err: err.message
-          });
+      })
+      .catch((err) => {
+        return res.status(500).json({
+          message: "Failed to check payment",
+          err: err.message
         });
-    });
-  };
+      });
+  });
+};
