@@ -45,6 +45,7 @@ app.get("/", (req, res) => {
   res.send("Night Login Website 2024 - Backend");
 });
 app.use("/api/v1/user", require("./src/routes/userRoutes"));
+app.use("/api/v1/onboarding", require("./src/routes/onboardingRoutes"));
 app.use("/api/v1/transaction", require("./src/routes/transactionRoutes"));
 
 const openApiSpec = {
@@ -98,10 +99,93 @@ const openApiSpec = {
           },
         },
         responses: {
-          200: { description: "Login successful" },
+          200: { 
+            description: "Login successful",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    status: { type: "number", example: 200 },
+                    message: { type: "string", example: "Login successful" },
+                    data: {
+                      type: "object",
+                      properties: {
+                        user: {
+                          type: "object",
+                          properties: {
+                            id: { type: "string" },
+                            email: { type: "string" },
+                            name: { type: "string" }
+                          }
+                        },
+                        token: { type: "string" },
+                        accessToken: { type: "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           400: { description: "Invalid credentials!" },
           404: { description: "User not found" },
           500: { description: "Failed to login user" },
+        },
+      },
+    },
+    "/api/v1/user/oauth-login": {
+      post: {
+        summary: "OAuth login/register (Google/GitHub)",
+        tags: ["User"],
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  email: { type: "string" },
+                  name: { type: "string" },
+                  provider: { type: "string", example: "google" },
+                  providerId: { type: "string" },
+                  image: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { 
+            description: "Login successful",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    status: { type: "number", example: 200 },
+                    message: { type: "string" },
+                    data: {
+                      type: "object",
+                      properties: {
+                        user: {
+                          type: "object",
+                          properties: {
+                            id: { type: "string" },
+                            email: { type: "string" },
+                            name: { type: "string" }
+                          }
+                        },
+                        token: { type: "string" },
+                        accessToken: { type: "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          201: { description: "User registered and logged in successfully" },
+          500: { description: "Failed to process OAuth login" },
         },
       },
     },
