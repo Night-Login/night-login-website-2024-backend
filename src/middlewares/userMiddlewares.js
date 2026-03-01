@@ -73,3 +73,53 @@ exports.ensureAuthenticated = async (req, res, next) => {
     next();
   });
 };
+
+/*
+  DESC        : Verify Cloudflare Turnstile captcha token
+  PARAMS      : captchaToken from request body
+  NOTES       : Calls Cloudflare siteverify endpoint using native fetch
+*/  
+exports.verifyCaptcha = async (req, res, next) => {
+  const { captchaToken } = req.body;
+
+  if (!captchaToken) {
+    return res.status(400).json({
+      status: 400,
+      message: "Captcha verification failed",
+      data: null
+    });
+  }
+
+  try {
+    const response = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          secret: process.env.TURNSTILE_SECRET_KEY,
+          response: captchaToken,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!data.success) {
+      return res.status(400).json({
+        status: 400,
+        message: "Captcha verification failed",
+        data: null
+      });
+    }
+
+    next();
+  } catch (err) {
+    return res.status(500).json({
+      status: 500,
+      message: "Captcha verification failed",
+      data: null,
+      error: err.message
+    });
+  }
+};

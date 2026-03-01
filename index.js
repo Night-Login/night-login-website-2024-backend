@@ -47,6 +47,8 @@ app.get("/", (req, res) => {
 app.use("/api/v1/user", require("./src/routes/userRoutes"));
 app.use("/api/v1/onboarding", require("./src/routes/onboardingRoutes"));
 app.use("/api/v1/transaction", require("./src/routes/transactionRoutes"));
+app.use("/api/v1/admin", require("./src/routes/adminRoutes"));
+app.use("/api/v1/lecturer", require("./src/routes/lecturerRoutes"));
 
 const openApiSpec = {
   openapi: "3.0.0",

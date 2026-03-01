@@ -4,22 +4,28 @@ const jwt = require("jsonwebtoken");
 
 /*
   DESC        : Register a new user
-  PARAMS      : email, name, password, salt
+  PARAMS      : email, name, password, salt, role (optional), profileData (optional)
   METHOD      : POST
   VISIBILITY  : Public
   PRE-REQ     : create hashed password and generate salt using middlewares/register.js
   RESPONSE    : Success message with user data and token
 */
 exports.registerUser = async (req, res) => {
-  const { email, name } = req.body;
+  const { email, name, role, profileData } = req.body;
   const password = req.password;
   const salt = req.salt;
+
+  // Validate role if provided — only member, lecturer, client allowed at registration
+  const allowedRoles = ["member", "lecturer", "client"];
+  const userRole = role && allowedRoles.includes(role) ? role : "member";
 
   const newUser = new User({
     email,
     name,
     password,
-    salt
+    salt,
+    role: userRole,
+    ...(profileData && typeof profileData === "object" ? { profileData } : {})
   });
 
   try {
